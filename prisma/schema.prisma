@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model User {
+  id             BigInt   @id @default(autoincrement())
+  name           String?
+  phone          String?   
+  email          String   @unique
+  password       String
+  isVerified     Boolean  @default(false) @map("is_verified")
+  fcm_token      String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  otps           OTP[]
+  refreshTokens  RefreshToken[]
+
+  @@map("users")
+}
+
+model OTP {
+  id         BigInt   @id @default(autoincrement())
+  code       String
+  userId     BigInt   @map("user_id")
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@map("otps")
+}
+
+model RefreshToken {
+  id         BigInt   @id @default(autoincrement())
+  token      String   @unique @db.VarChar(500)
+  userId     BigInt   @map("user_id")
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@map("refresh_tokens")
+}

@@ -1,31 +1,13 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-
+import { AuthModule } from './auth/auth.module'; // Import AuthModule
 import { PrismaModule } from './prisma/prisma.module';
-
-import { AuthModule } from './auth/auth.module';
-import { UsersModule } from './users/users.module';
-import { RolesModule } from './roles/roles.module';
-import { PermissionsModule } from './permissions/permissions.module';
 
 @Module({
   imports: [
-    // ENV
-    ConfigModule.forRoot({
-      isGlobal: true,
-    }),
-
-    // DATABASE (Prisma)
-    PrismaModule,
-
-    // FEATURE MODULES
-    AuthModule,
-    UsersModule,
-    RolesModule,
-    PermissionsModule,
+    AuthModule, // Add AuthModule here
+    PrismaModule, // Ensure PrismaModule is also imported if not nested in AuthModule
   ],
   controllers: [AppController],
   providers: [AppService],
