@@ -91,36 +91,63 @@ $ npm run start:prod
 
 ## Penggunaan
 
-```bash
-# endpoint Register
-/auth/register ::post
-## request body
-{
-  "name": "Test",
-  "email": "test@gmail.com",
-  "password": "12345678"
-}
+### endpoint Register ::post
 
-# endpoint verify otp
-/auth/verify-otp ::post
-## request body
+```bash
+/auth/register
+```
+
+#### request body
+
+```bash
+{
+ "name": "Test",
+ "email": "test@gmail.com",
+ "password": "12345678"
+}
+```
+
+### endpoint verify otp ::post
+
+```bash
+/auth/verify-otp
+```
+
+#### request body
+
+```bash
 {
   "userId": "1",
   "code": "695691"
 }
+```
 
-# Endpoint resend otp
-/auth/resend-otp ::post
-## request body
+## Endpoint resend otp ::post
+
+```bash
+/auth/resend-otp
+```
+
+### request body
+
+```bash
 {
   "email": "test@gmail.com"
 }
-# Endpoint Login
-/auth/login ::post
-## request body
+```
+
+## Endpoint Login ::post
+
+```bash
+/auth/login
+```
+
+### request body
+
+```bash
 {
-  "email": "test@gmail.com",
-  "password":"12345678"
+"email": "test@gmail.com",
+"password":"12345678"
 }
 
 ```
@@ -128,3 +155,7 @@ $ npm run start:prod
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+```
+
+```
