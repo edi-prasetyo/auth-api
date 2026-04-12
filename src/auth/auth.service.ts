@@ -40,6 +40,27 @@ export class AuthService {
 
     return otpCode;
   }
+  // Resend OTP
+  async resendOtp(email: string): Promise<any> {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    if (user.isVerified) {
+      throw new BadRequestException('User already verified');
+    }
+
+    const otp = await this.generateOtp(user.id);
+
+    return {
+      message: 'OTP resent successfully',
+      userId: user.id.toString(),
+    };
+  }
 
   // Register user
   async register(registerDto: RegisterDto): Promise<any> {

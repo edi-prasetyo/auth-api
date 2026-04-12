@@ -36,6 +36,42 @@ $ cd <nama-folder>
 
 # Install dependensi
 $ npm install
+
+# Migration
+$ npx prisma migrate dev
+$ npx prisma generate
+$ npx prisma migrate dev --name init
+
+```
+
+## Add .env File
+
+```bash
+
+# ========================
+# DATABASE
+# ========================
+DATABASE_URL="mysql://root:@localhost:3306/db_auth"
+
+# ========================
+# JWT CONFIG
+# ========================
+JWT_ACCESS_SECRET="access_secret_key"
+JWT_REFRESH_SECRET="refresh_secret_key"
+JWT_ACCESS_EXPIRATION=900a
+JWT_REFRESH_EXPIRATION=7776000
+JWT_ISSUER="auth-api"
+
+# ========================
+# APP CONFIG
+# ========================
+PORT=3000
+
+# ========================
+# OPTIONAL (ENV MODE)
+# ========================
+NODE_ENV=development
+
 ```
 
 ## Running the App
@@ -51,6 +87,42 @@ $ npm run start:dev
 
 # production mode
 $ npm run start:prod
+```
+
+## Penggunaan
+
+```bash
+# endpoint Register
+/auth/register ::post
+## request body
+{
+  "name": "Test",
+  "email": "test@gmail.com",
+  "password": "12345678"
+}
+
+# endpoint verify otp
+/auth/verify-otp ::post
+## request body
+{
+  "userId": "1",
+  "code": "695691"
+}
+
+# Endpoint resend otp
+/auth/resend-otp ::post
+## request body
+{
+  "email": "test@gmail.com"
+}
+# Endpoint Login
+/auth/login ::post
+## request body
+{
+  "email": "test@gmail.com",
+  "password":"12345678"
+}
+
 ```
 
 ## License
