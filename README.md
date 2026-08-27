@@ -53,19 +53,25 @@ $ npm run seed
 
 ```bash
 
+
 # ========================
 # DATABASE
 # ========================
-DATABASE_URL="mysql://root:@localhost:3306/db_auth"
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USERNAME=root
+DB_PASSWORD=
+DB_DATABASE=db_auth
+
 
 # ========================
 # JWT CONFIG
 # ========================
-JWT_ACCESS_SECRET="access_secret_key"
-JWT_REFRESH_SECRET="refresh_secret_key"
-JWT_ACCESS_EXPIRATION=900a
+JWT_ACCESS_SECRET=change_me_access_secret
+JWT_REFRESH_SECRET=change_me_refresh_secret
+JWT_ACCESS_EXPIRATION=3600
 JWT_REFRESH_EXPIRATION=7776000
-JWT_ISSUER="auth-api"
+JWT_ISSUER=auth-api
 
 # ========================
 # APP CONFIG
@@ -76,6 +82,7 @@ PORT=3000
 # OPTIONAL (ENV MODE)
 # ========================
 NODE_ENV=development
+
 
 ```
 
