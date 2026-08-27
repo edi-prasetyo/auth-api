@@ -1,23 +1,27 @@
 import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { PrismaModule } from '../prisma/prisma.module';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { User } from '../users/entities/user.entity';
+import { Otp } from '../users/entities/otp.entity';
+import { RefreshToken } from '../users/entities/refresh-token.entity';
+import { UserRole } from '../rbac/entities/user-role.entity';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
   imports: [
     ConfigModule,
-    PrismaModule,
+    TypeOrmModule.forFeature([User, Otp, RefreshToken, UserRole]),
     PassportModule.register({
       defaultStrategy: 'jwt',
     }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
+      useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_ACCESS_SECRET'),
         signOptions: {
           expiresIn: configService.get<number>('JWT_ACCESS_EXPIRATION') || 900,
@@ -25,11 +29,9 @@ import { JwtStrategy } from './strategies/jwt.strategy';
         },
       }),
     }),
-    // If you need to manage refresh tokens with JWT, you might need another JwtModule instance or a separate strategy/service.
-    // For now, assuming refresh token is stored in DB and JWT is primarily for access.
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],
-  exports: [AuthService, JwtModule, PassportModule], // Exporting AuthService and JwtModule for potential use in other modules
+  exports: [AuthService, JwtModule, PassportModule],
 })
 export class AuthModule {}

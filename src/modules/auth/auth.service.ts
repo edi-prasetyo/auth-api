@@ -3,12 +3,14 @@ import {
   UnauthorizedException,
   BadRequestException,
 } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
-import { v4 as uuidv4 } from 'uuid';
-
+import bcrypt from 'bcrypt';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from '../users/entities/user.entity';
+import { Otp } from '../users/entities/otp.entity';
+import { RefreshToken } from '../users/entities/refresh-token.entity';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { LoginDto } from './dto/login.dto';
@@ -17,34 +19,32 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 @Injectable()
 export class AuthService {
   constructor(
-    private prisma: PrismaService,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+    @InjectRepository(Otp)
+    private otpRepository: Repository<Otp>,
+    @InjectRepository(RefreshToken)
+    private refreshTokenRepository: Repository<RefreshToken>,
     private jwtService: JwtService,
     private configService: ConfigService,
   ) {}
 
-  // Helper to generate OTP
-  private async generateOtp(userId: bigint): Promise<string> {
+  private async generateOtp(userId: number): Promise<string> {
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
 
-    // Delete existing OTP for the user
-    await this.prisma.oTP.deleteMany({ where: { userId } });
-
-    await this.prisma.oTP.create({
-      data: {
-        userId,
-        code: otpCode,
-        expiresAt: otpExpiry,
-      },
+    await this.otpRepository.delete({ userId });
+    await this.otpRepository.save({
+      userId,
+      code: otpCode,
+      expiresAt: otpExpiry,
     });
 
     return otpCode;
   }
-  // Resend OTP
+
   async resendOtp(email: string): Promise<any> {
-    const user = await this.prisma.user.findUnique({
-      where: { email },
-    });
+    const user = await this.userRepository.findOne({ where: { email } });
 
     if (!user) {
       throw new BadRequestException('User not found');
@@ -54,7 +54,7 @@ export class AuthService {
       throw new BadRequestException('User already verified');
     }
 
-    const otp = await this.generateOtp(user.id);
+    await this.generateOtp(user.id);
 
     return {
       message: 'OTP resent successfully',
@@ -62,40 +62,36 @@ export class AuthService {
     };
   }
 
-  // Register user
   async register(registerDto: RegisterDto): Promise<any> {
     const { name, email, password } = registerDto;
 
-    const existingUser = await this.prisma.user.findUnique({
+    const existingUser = await this.userRepository.findOne({
       where: { email },
     });
     if (existingUser) throw new BadRequestException('Email already exists');
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = await this.prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        isVerified: false,
-      },
+    const newUser = await this.userRepository.save({
+      name,
+      email,
+      password: hashedPassword,
+      isVerified: false,
     });
 
-    const otp = await this.generateOtp(newUser.id);
+    await this.generateOtp(newUser.id);
 
     return {
       message: 'User registered successfully. Please check your email for OTP.',
-      userId: newUser.id.toString(), // return string for frontend convenience
+      userId: newUser.id.toString(),
     };
   }
 
-  // Verify OTP
   async verifyOtp(dto: VerifyOtpDto): Promise<any> {
-    const userId = BigInt(dto.userId);
+    const userId = parseInt(dto.userId, 10);
     const otpCode = dto.otpCode;
 
-    const otpRecord = await this.prisma.oTP.findFirst({
+    const otpRecord = await this.otpRepository.findOne({
       where: { userId, code: otpCode },
     });
 
@@ -103,39 +99,54 @@ export class AuthService {
 
     const now = new Date();
     if (otpRecord.expiresAt < now) {
-      await this.prisma.oTP.delete({ where: { id: otpRecord.id } });
+      await this.otpRepository.delete(otpRecord.id);
       throw new BadRequestException(
         'OTP has expired. Please request a new one.',
       );
     }
 
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { isVerified: true },
-    });
-    await this.prisma.oTP.delete({ where: { id: otpRecord.id } });
+    await this.userRepository.update(userId, { isVerified: true });
+    await this.otpRepository.delete(otpRecord.id);
 
     return { message: 'OTP verified successfully. You can now log in.' };
   }
 
-  // Login user
-  async login(
-    dto: LoginDto,
-  ): Promise<{ accessToken: string; refreshToken: string }> {
+  async login(dto: LoginDto): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    user: {
+      id: number;
+      email: string;
+      name: string;
+      phone: string;
+    };
+  }> {
     const { email, password } = dto;
 
-    const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user) throw new UnauthorizedException('Invalid credentials.');
-    if (!user.isVerified) throw new UnauthorizedException('User not verified.');
+    const user = await this.userRepository.findOne({ where: { email } });
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials.');
+    }
+
+    if (!user.isVerified) {
+      throw new UnauthorizedException('User not verified.');
+    }
 
     const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) throw new UnauthorizedException('Invalid credentials.');
+
+    if (!validPassword) {
+      throw new UnauthorizedException('Invalid credentials.');
+    }
 
     const refreshTokenExpiry =
       this.configService.get<number>('JWT_REFRESH_EXPIRATION') || 7776000;
 
     const accessToken = this.jwtService.sign(
-      { userId: user.id.toString(), email: user.email },
+      {
+        userId: user.id.toString(),
+        email: user.email,
+      },
       {
         secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
         expiresIn:
@@ -143,9 +154,13 @@ export class AuthService {
       },
     );
 
-    const refreshTokenId = BigInt(Date.now()); // simple BigInt id for RefreshToken
+    const refreshTokenId = Date.now();
+
     const refreshToken = this.jwtService.sign(
-      { userId: user.id.toString(), jti: refreshTokenId.toString() },
+      {
+        userId: user.id.toString(),
+        jti: refreshTokenId.toString(),
+      },
       {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
         expiresIn: refreshTokenExpiry,
@@ -156,35 +171,47 @@ export class AuthService {
       Date.now() + refreshTokenExpiry * 1000,
     );
 
-    await this.prisma.refreshToken.deleteMany({ where: { userId: user.id } });
-
-    await this.prisma.refreshToken.create({
-      data: {
-        id: refreshTokenId,
-        token: refreshToken,
-        userId: user.id,
-        expiresAt: refreshTokenExpiresAt,
-      },
+    await this.refreshTokenRepository.delete({
+      userId: user.id,
     });
 
-    return { accessToken, refreshToken };
+    await this.refreshTokenRepository.save({
+      id: refreshTokenId,
+      token: refreshToken,
+      userId: user.id,
+      expiresAt: refreshTokenExpiresAt,
+    });
+
+    if (!user.email || !user.phone) {
+      throw new UnauthorizedException('User email is required.');
+    }
+
+    return {
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        phone: user.phone,
+      },
+    };
   }
 
-  // Refresh token
   async refreshToken(
     dto: RefreshTokenDto,
   ): Promise<{ accessToken: string; refreshToken: string }> {
     const refreshToken = dto.refreshToken;
 
     try {
-      const decoded: any = this.jwtService.verify(refreshToken, {
+      const decoded = this.jwtService.verify(refreshToken, {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
       });
 
-      const userId = BigInt(decoded.userId);
-      const tokenId = BigInt(decoded.jti);
+      const userId = parseInt(decoded.userId, 10);
+      const tokenId = parseInt(decoded.jti, 10);
 
-      const dbToken = await this.prisma.refreshToken.findUnique({
+      const dbToken = await this.refreshTokenRepository.findOne({
         where: { id: tokenId },
       });
       if (!dbToken || new Date() > dbToken.expiresAt)
@@ -199,7 +226,7 @@ export class AuthService {
         },
       );
 
-      const newRefreshTokenId = BigInt(Date.now());
+      const newRefreshTokenId = Date.now();
       const newRefreshToken = this.jwtService.sign(
         { userId: userId.toString(), jti: newRefreshTokenId.toString() },
         {
@@ -211,31 +238,30 @@ export class AuthService {
 
       const newRefreshTokenExpiresAt = new Date(Date.now() + 7776000 * 1000);
 
-      await this.prisma.refreshToken.deleteMany({ where: { userId } });
-      await this.prisma.refreshToken.create({
-        data: {
-          id: newRefreshTokenId,
-          token: newRefreshToken,
-          userId,
-          expiresAt: newRefreshTokenExpiresAt,
-        },
+      await this.refreshTokenRepository.delete({ userId });
+      await this.refreshTokenRepository.save({
+        id: newRefreshTokenId,
+        token: newRefreshToken,
+        userId,
+        expiresAt: newRefreshTokenExpiresAt,
       });
 
       return { accessToken: newAccessToken, refreshToken: newRefreshToken };
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Invalid or expired refresh token.');
     }
   }
 
-  // Logout
-  async logout(userIdStr: string, refreshToken: string) {
-    const userId = BigInt(userIdStr);
-
-    const deleted = await this.prisma.refreshToken.deleteMany({
-      where: { userId, token: refreshToken },
+  async logout(
+    userId: number,
+    refreshToken: string,
+  ): Promise<{ message: string }> {
+    const result = await this.refreshTokenRepository.delete({
+      userId,
+      token: refreshToken,
     });
 
-    if (deleted.count === 0)
+    if (result.affected === 0)
       throw new BadRequestException(
         'Refresh token not found or already invalidated.',
       );

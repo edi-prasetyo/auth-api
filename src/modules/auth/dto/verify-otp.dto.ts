@@ -1,12 +1,12 @@
-import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class VerifyOtpDto {
   @ApiProperty({
-    example: '123e4567-e89b-12d3-a456-426614174000',
-    description: 'UUID of the user',
+    example: '1',
+    description: 'ID of the user',
   })
-  @IsUUID()
+  @IsString()
   @IsNotEmpty()
   userId!: string;
 

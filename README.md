@@ -38,9 +38,14 @@ $ cd <nama-folder>
 $ npm install
 
 # Migration
-$ npx prisma migrate dev
-$ npx prisma generate
-$ npx prisma migrate dev --name init
+$ npm run migration:revert
+$ npm run migration:run
+$ npm run seed
+
+# Drop All Table Fresh
+$ npm run db:reset
+$ npm run migration:run
+$ npm run seed
 
 ```
 
