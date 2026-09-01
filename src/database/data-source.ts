@@ -7,6 +7,8 @@ import { Role } from '../modules/rbac/entities/role.entity';
 import { Permission } from '../modules/rbac/entities/permission.entity';
 import { RolePermission } from '../modules/rbac/entities/role-permission.entity';
 import { UserRole } from '../modules/rbac/entities/user-role.entity';
+import { Mailer } from '../modules/notification/entities/mailer.entity';
+import { WhatsappSender } from '../modules/notification/entities/whatsapp-sender.entity';
 
 const config: DataSourceOptions = {
   type: 'mysql',
@@ -16,11 +18,23 @@ const config: DataSourceOptions = {
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_DATABASE || 'db_auth',
 
-  entities: [User, UserDetail, Otp, RefreshToken, Role, Permission, RolePermission, UserRole],
+  entities: [
+    User,
+    UserDetail,
+    Otp,
+    RefreshToken,
+    Role,
+    Permission,
+    RolePermission,
+    UserRole,
+    Mailer,
+    WhatsappSender,
+  ],
 
   migrations: [
     __dirname + '/../modules/users/database/migrations/*{.ts,.js}',
     __dirname + '/../modules/rbac/database/migrations/*{.ts,.js}',
+    __dirname + '/../modules/notification/database/migrations/*{.ts,.js}',
   ],
 
   synchronize: false,

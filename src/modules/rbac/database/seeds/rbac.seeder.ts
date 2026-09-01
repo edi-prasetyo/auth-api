@@ -28,22 +28,22 @@ export default class RbacSeeder {
       );
     }
 
-    const adminRole = (await this.dataSource.query(
+    const adminRole = await this.dataSource.query(
       'SELECT id FROM roles WHERE name = ?',
       ['admin'],
-    )) as any[];
-    const moderatorRole = (await this.dataSource.query(
+    );
+    const moderatorRole = await this.dataSource.query(
       'SELECT id FROM roles WHERE name = ?',
       ['moderator'],
-    )) as any[];
-    const userRole = (await this.dataSource.query(
+    );
+    const userRole = await this.dataSource.query(
       'SELECT id FROM roles WHERE name = ?',
       ['user'],
-    )) as any[];
+    );
 
-    const allPermissions = (await this.dataSource.query(
+    const allPermissions = await this.dataSource.query(
       'SELECT id FROM permissions',
-    )) as any[];
+    );
 
     if (adminRole.length > 0 && allPermissions.length > 0) {
       for (const permission of allPermissions) {
@@ -54,14 +54,14 @@ export default class RbacSeeder {
       }
     }
 
-    const readUserPermission = (await this.dataSource.query(
+    const readUserPermission = await this.dataSource.query(
       'SELECT id FROM permissions WHERE name = ?',
       ['read_user'],
-    )) as any[];
-    const createUserPermission = (await this.dataSource.query(
+    );
+    const createUserPermission = await this.dataSource.query(
       'SELECT id FROM permissions WHERE name = ?',
       ['create_user'],
-    )) as any[];
+    );
 
     if (moderatorRole.length > 0) {
       const moderatorPermissions = [

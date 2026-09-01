@@ -15,6 +15,9 @@ import { Permission } from './modules/rbac/entities/permission.entity';
 import { RolePermission } from './modules/rbac/entities/role-permission.entity';
 import { UserRole } from './modules/rbac/entities/user-role.entity';
 import { RbacModule } from './modules/rbac/rbac.module';
+import { Mailer } from './modules/notification/entities/mailer.entity';
+import { WhatsappSender } from './modules/notification/entities/whatsapp-sender.entity';
+import { NotificationModule } from './modules/notification/notification.module';
 
 @Module({
   imports: [
@@ -30,12 +33,15 @@ import { RbacModule } from './modules/rbac/rbac.module';
         Permission,
         RolePermission,
         UserRole,
+        Mailer,
+        WhatsappSender,
       ],
       synchronize: false,
     }),
     AuthModule,
     UsersModule,
     RbacModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

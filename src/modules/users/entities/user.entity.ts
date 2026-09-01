@@ -12,7 +12,6 @@ import { Otp } from './otp.entity';
 import { RefreshToken } from './refresh-token.entity';
 import { UserRole } from '../../rbac/entities/user-role.entity';
 
-
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn({ type: 'int' })

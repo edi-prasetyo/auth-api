@@ -40,35 +40,42 @@ export default class UserSeeder {
     for (const user of users) {
       await this.dataSource.query(
         'INSERT IGNORE INTO users (name, email, phone, password, is_verified, is_active) VALUES (?, ?, ?, ?, ?, ?)',
-        [user.name, user.email, user.phone, user.password, user.isVerified, user.isActive],
+        [
+          user.name,
+          user.email,
+          user.phone,
+          user.password,
+          user.isVerified,
+          user.isActive,
+        ],
       );
     }
 
-    const adminRole = (await this.dataSource.query(
+    const adminRole = await this.dataSource.query(
       'SELECT id FROM roles WHERE name = ?',
       ['admin'],
-    )) as any[];
-    const moderatorRole = (await this.dataSource.query(
+    );
+    const moderatorRole = await this.dataSource.query(
       'SELECT id FROM roles WHERE name = ?',
       ['moderator'],
-    )) as any[];
-    const userRole = (await this.dataSource.query(
+    );
+    const userRole = await this.dataSource.query(
       'SELECT id FROM roles WHERE name = ?',
       ['user'],
-    )) as any[];
+    );
 
-    const adminUser = (await this.dataSource.query(
+    const adminUser = await this.dataSource.query(
       'SELECT id FROM users WHERE email = ?',
       ['admin@example.com'],
-    )) as any[];
-    const moderatorUser = (await this.dataSource.query(
+    );
+    const moderatorUser = await this.dataSource.query(
       'SELECT id FROM users WHERE email = ?',
       ['moderator@example.com'],
-    )) as any[];
-    const regularUser = (await this.dataSource.query(
+    );
+    const regularUser = await this.dataSource.query(
       'SELECT id FROM users WHERE email = ?',
       ['user@example.com'],
-    )) as any[];
+    );
 
     if (adminUser.length > 0 && adminRole.length > 0) {
       await this.dataSource.query(

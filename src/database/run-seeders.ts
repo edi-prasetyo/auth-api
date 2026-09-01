@@ -2,6 +2,8 @@ import 'dotenv/config';
 import AppDataSource from '../database/data-source';
 import UserSeeder from '../modules/users/database/seeds/user.seeder';
 import RbacSeeder from '../modules/rbac/database/seeds/rbac.seeder';
+import MailerSeeder from '../modules/notification/database/seeds/mailer.seeder';
+import WhatsappSenderSeeder from '../modules/notification/database/seeds/whatsapp-sender.seeder';
 
 async function runSeeders(): Promise<void> {
   try {
@@ -27,6 +29,14 @@ async function runSeeders(): Promise<void> {
     const rbacSeeder = new RbacSeeder(dataSource as any);
     await rbacSeeder.run();
     console.log('RBAC seeder executed.');
+
+    const mailerSeeder = new MailerSeeder(dataSource as any);
+    await mailerSeeder.run();
+    console.log('Mailer seeder executed.');
+
+    const whatsappSenderSeeder = new WhatsappSenderSeeder(dataSource as any);
+    await whatsappSenderSeeder.run();
+    console.log('WhatsApp sender seeder executed.');
 
     await dataSource.destroy();
     console.log('Data Source destroyed.');

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtModule } from '@nestjs/jwt';
@@ -10,6 +10,7 @@ import { Otp } from '../users/entities/otp.entity';
 import { RefreshToken } from '../users/entities/refresh-token.entity';
 import { UserRole } from '../rbac/entities/user-role.entity';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
         },
       }),
     }),
+    forwardRef(() => NotificationModule),
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],

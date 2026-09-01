@@ -15,6 +15,7 @@ import { RegisterDto } from './dto/register.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class AuthService {
@@ -27,6 +28,7 @@ export class AuthService {
     private refreshTokenRepository: Repository<RefreshToken>,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private notificationService: NotificationService,
   ) {}
 
   private async generateOtp(userId: number): Promise<string> {
@@ -54,7 +56,38 @@ export class AuthService {
       throw new BadRequestException('User already verified');
     }
 
-    await this.generateOtp(user.id);
+    const otpCode = await this.generateOtp(user.id);
+
+    // Send OTP to all available channels (email and/or WhatsApp)
+    try {
+      const sendPromises: Promise<void>[] = [];
+
+      // Always try to send via email if user has email
+      if (user.email) {
+        sendPromises.push(
+          this.notificationService
+            .sendOtpEmail(user.email, otpCode)
+            .catch((err) => {
+              console.error('Failed to send OTP via email:', err);
+            }),
+        );
+      }
+
+      // Always try to send via WhatsApp if user has phone
+      if (user.phone) {
+        sendPromises.push(
+          this.notificationService
+            .sendOtpWhatsApp(user.phone, otpCode)
+            .catch((err) => {
+              console.error('Failed to send OTP via WhatsApp:', err);
+            }),
+        );
+      }
+
+      await Promise.all(sendPromises);
+    } catch (error) {
+      console.error('Failed to send OTP:', error);
+    }
 
     return {
       message: 'OTP resent successfully',
@@ -79,7 +112,41 @@ export class AuthService {
       isVerified: false,
     });
 
-    await this.generateOtp(newUser.id);
+    const otpCode = await this.generateOtp(newUser.id);
+
+    // Send OTP to all available channels (email and/or WhatsApp)
+    // The system will skip a channel if:
+    // - No active configuration exists for that channel
+    // - User doesn't have the required contact info (email/phone)
+    try {
+      const sendPromises: Promise<void>[] = [];
+
+      // Always try to send via email if user has email
+      if (newUser.email) {
+        sendPromises.push(
+          this.notificationService
+            .sendOtpEmail(newUser.email, otpCode)
+            .catch((err) => {
+              console.error('Failed to send OTP via email:', err);
+            }),
+        );
+      }
+
+      // Always try to send via WhatsApp if user has phone
+      if (newUser.phone) {
+        sendPromises.push(
+          this.notificationService
+            .sendOtpWhatsApp(newUser.phone, otpCode)
+            .catch((err) => {
+              console.error('Failed to send OTP via WhatsApp:', err);
+            }),
+        );
+      }
+
+      await Promise.all(sendPromises);
+    } catch (error) {
+      console.error('Failed to send OTP:', error);
+    }
 
     return {
       message: 'User registered successfully. Please check your email for OTP.',
