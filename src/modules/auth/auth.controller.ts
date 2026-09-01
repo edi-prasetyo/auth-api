@@ -93,12 +93,11 @@ export class AuthController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async login(@Body() loginDto: LoginDto) {
-    const tokens = await this.authService.login(loginDto);
     const result = await this.authService.login(loginDto);
 
     return {
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
       user: result.user,
     };
   }
